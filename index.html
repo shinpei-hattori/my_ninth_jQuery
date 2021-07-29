@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<title></title>
+<link rel="stylesheet" href="css/reset.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<ul class="lists clearfix"></ul>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript">
+// 今回やるのは神経衰弱です。
+// 今までの課題と違い、ロジックっぽいロジックを書きます。JS書いてるんだなーって気持ちになります。
+// まずゲームの流れを説明します。
+//
+// ①: 16枚のリストの中から "?" と書かれたものをひとつクリックする
+// ②: その要素に書かれている "?" が "6" などの数字に変わる
+// ③: もうひとつ"?"と書かれたものをクリックする
+// ④: その要素に書かれている "?" が "6" などの数字に変わる
+// ⑤: ②と④で表示された数字が一致している場合は、開いた数字はそのままで①に戻る。一致していない場合は1秒後に数字が "?" に戻り①にもどる。
+// ⑥: 全ての要素が開かれたときにアラートで "Game Over"
+//
+// 以上が全体の流れです。
+// ここからはプログラムの説明です。
+// まず最初にやらなければいけないことは、16枚のリストを表示するです。
+// ただ単純な配列であればfor文を用いれば、簡単につくることが出来ますが、今回作るのは "1~8までの数字を2つずつ" かつ "ランダム" にしないといけません。
+// おそらくこの部分が一番の鬼門ですが、どうにかクリアしましょう。
+// 配列さえ出来上がってしまえば、for文を使って <li> を変数に文字列でくっつけてあげましょう。
+//<li> 自体の中身は "?" にし、data属性に先ほど作った配列の値を入れてあげると今後楽になるかと思います。for文の中ではなく、外でappendしましょうね（ニッコリ
+//
+// 次はクリックイベントについて説明します。
+// 流れの部分をよく読んでif文とか使って実装しましょう（適当
+// ちなみに setTimeout などを使うことで1秒後に〜するなどは実装出来ます。
+// クリックした要素は必ず変数に格納しましょう。こうすることで比較が非常に簡単です。
+// 以上になります。10個の中で一番難しい"らしい"のですが、頑張ってクリアしましょう！
+$(function(){
+  var shuffle = function() {return Math.random()-.5}; //配列の中身をシャッフルする関数
+  var lists = $(".lists"),
+      card = [],//16枚のカードを格納する配列
+      list = "",//liタグを格納
+      data = 0,//カードの数字を取得
+      judge = true,//1回目の選択ではtrue,2回目の選択ではfalse
+      first,//1枚目のカードの数字
+      second,//2枚目のカードの数字
+      index = [],//引いたカードのインデックス番号を取得
+      click = true,//連続クリック防止の変数。trueでクリックのイベントの処理が始まり、クリック後falseになり、処理が終わるとtrueになる。
+      count = 0;//何回カードが揃ったか判定
+  for(var i = 0; i < 8; i++){
+    card.push(i);//配列に0~7までのカードを２セット格納
+    card.push(i);
+  }
+  card.sort(shuffle);//カードをシャッフル
+  var length = card.length;//カードの枚数
+  for(var i = 0;i < length;i++){
+    list += `<li data-list="${card[i]}">?</li>`;//カードの枚数分liタグを格納
+  }
+  lists.append(list);//ulの中にliをappend
+  var ll = $(".lists").find("li");//liの指定をllに省略
+
+  ll.click(function(){//クリックイベントスタート
+    if(click) {//clickがtrueの場合に処理スタート
+      click = false;//処理が終わるまでfalseにする
+      if($(this).text()=="?"){//？カードを選択した場合
+        data = $(this).data("list");
+        $(this).text(data);//？を数字に変更
+      }else{
+        click = true;//?でない場合trueにしてやり直しさせる。
+        return;
+      }
+      if(judge) {//1回目のカードの処理,1回目はjudgeがture
+        judge = false;//2回目はfalseにする
+        first = data;//カードの内容を格納
+        index[0] = $(this).index();//カードのインデックス番号を格納
+        click = true;//処理が終わったらtrueに変更
+      } else if(index[0] == $(this).index()){//ここから2回目の選択以降の処理。
+        click = true;//1回目と2回目の選択で同じインデックス番号のカードを選択しているためやり直しさせる。
+        return;
+      } else {//2回目のカードがちゃんと選択された後の処理
+        second = data;//2回目のカードの内容を格納
+        if(first==second){//カードが一致した場合の処理
+          index[1] = $(this).index();//2回目のインデックス番号を格納
+          ll.eq(index[0]).css("background-color","tomato");//背景色変更
+          ll.eq(index[1]).css("background-color","tomato");
+          judge = true;//2回の処理が終わったためtureに変更
+          click = true;//処理が終わったらtrueに変更
+          count++;//ペアが揃ったらプラス
+          if(count==8){
+            alert("Clear!!");//８ペア揃ったらアラートをだす
+          }
+        }else{//カードが揃わなかった場合の処理
+          index[1] = $(this).index();//2回目のカードのインデックス番号格納
+          setTimeout(function(){
+            ll.eq(index[0]).text("?");//1回目2回目それぞれ?に変更
+            ll.eq(index[1]).text("?");
+            judge = true;//2回の処理が終わったためtureに変更
+            click = true;//処理が終わったらtrueに変更
+          },2000);
+        }
+      }
+    }
+  });
+});
+</script>
+<!-- <li data-list="">?</li> -->
+</body>
+</html>
